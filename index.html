@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品发布说明 (CSV版)</title>
+    <style>
+        /* ==================== 基础变量 ==================== */
+        :root {
+            --primary: #B11E24;
+            --primary-light: #fee2e2;
+            --secondary: #3b82f6;
+            --secondary-light: #dbeafe;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            
+            /* 标签颜色 */
+            --tag-new-bg: #dcfce7; --tag-new-text: #166534;
+            --tag-fix-bg: #fee2e2; --tag-fix-text: #991b1b;
+            --tag-opt-bg: #fef3c7; --tag-opt-text: #92400e;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            line-height: 1.6; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .hidden { display: none !important; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 20px; width: 100%; }
+
+        /* ==================== 导航栏 ==================== */
+        header { background: var(--card-bg); border-bottom: 1px solid var(--border); flex-shrink: 0; z-index: 100; }
+        .nav-wrapper { display: flex; justify-content: space-between; align-items: center; height: 60px; }
+        .logo { font-size: 1.2rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .btn { padding: 6px 16px; border-radius: 6px; border: 1px solid var(--border); background: white; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; }
+        .btn:hover { background: #f1f5f9; }
+        .btn-primary { background: var(--primary); color: white; border: none; }
+        .btn-primary:hover { background: #9A1A20; box-shadow: 0 2px 4px rgba(177, 30, 36, 0.3); }
+
+        /* ==================== 主布局 (左右分栏) ==================== */
+        .main-layout { display: flex; flex: 1; overflow: hidden; }
+        
+        /* 左侧侧边栏 */
+        .sidebar { width: 280px; background: var(--card-bg); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; font-weight: 700; color: var(--text-sub); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+        .version-list { list-style: none; padding: 10px; }
+        .version-item { padding: 10px 12px; margin-bottom: 4px; border-radius: 6px; cursor: pointer; color: var(--text-sub); font-size: 0.95rem; transition: all 0.2s; display: flex; justify-content: space-between; }
+        .version-item:hover { background: #f1f5f9; color: var(--text-main); }
+        .version-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .version-item .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; }
+        .version-item.active .badge { background: white; color: var(--primary); }
+
+        /* 右侧内容区 */
+        .content-area { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: clamp(20px, 5vw, 80px) 40px; 
+            scroll-behavior: smooth; 
+        }
+        
+        /* 详情卡片 */
+        .detail-card { 
+            background: var(--card-bg); 
+            border-radius: 12px; 
+            padding: clamp(24px, 4vw, 60px); 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
+            border: 1px solid var(--border); 
+            max-width: 960px; 
+            margin: 0 auto; 
+            width: 100%; 
+            min-height: 200px;
+        }
+
+        /* 卡片内部样式 */
+        .card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+        .version-title { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 800; color: var(--text-main); line-height: 1.2; }
+        .release-date { color: var(--text-sub); font-size: 1rem; font-family: monospace; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; }
+        .status-badge { font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; font-weight: 600; margin-left: auto; }
+        .status-stable { background: #f0fdf4; color: #15803d; }
+        .status-beta { background: #fffbeb; color: #b45309; }
+
+        .change-list { list-style: none; }
+        .change-item { display: flex; flex-direction: column; margin-bottom: 16px; font-size: 1rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px; }
+        .change-item:last-child { border-bottom: none; }
+        
+        .change-header { display: flex; align-items: center; justify-content: space-between; }
+        .change-main { display: flex; align-items: center; gap: 12px; flex: 1; }
+        
+        .change-tag { flex-shrink: 0; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; min-width: 60px; text-align: center; }
+        .tag-new { background: var(--tag-new-bg); color: var(--tag-new-text); }
+        .tag-fix { background: var(--tag-fix-bg); color: var(--tag-fix-text); }
+        .tag-opt { background: var(--tag-opt-bg); color: var(--tag-opt-text); }
+        
+        .change-title { color: #334155; font-weight: 500; }
+        
+        .btn-detail { font-size: 0.8rem; color: var(--primary); background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; white-space: nowrap; }
+        .btn-detail:hover { background: var(--primary-light); }
+
+        .change-detail-box { margin-top: 10px; padding: 12px; background: #f8fafc; border-radius: 6px; color: #64748b; font-size: 0.95rem; line-height: 1.6; border-left: 3px solid var(--border); display: none; }
+        .change-detail-box.show { display: block; animation: slideDown 0.3s ease; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ==================== 录入模式 ==================== */
+        .admin-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); z-index: 200; overflow-y: auto; padding: 40px 20px; }
+        .admin-container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-row { display: flex; gap: 16px; }
+        .form-col { flex: 1; }
+        .form-label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; font-family: inherit; }
+        .form-textarea { resize: vertical; min-height: 80px; }
+        
+        .changes-editor { border: 1px solid var(--border); border-radius: 6px; padding: 16px; background: #f8fafc; }
+        .change-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); }
+        .change-row:last-child { border-bottom: none; margin-bottom: 0; }
+        
+        .row-top { display: flex; gap: 10px; align-items: center; }
+        .row-top select { width: 100px; flex-shrink: 0; }
+        .row-top input { flex: 1; }
+        
+        .btn-icon { padding: 8px; color: #ef4444; border: none; background: transparent; cursor: pointer; font-size: 1.2rem; }
+        .btn-add { width: 100%; border: 1px dashed var(--border); background: white; color: var(--primary); padding: 10px; border-radius: 6px; cursor: pointer; }
+        .btn-add:hover { background: #eff6ff; }
+
+        /* 登录弹窗 */
+        #loginModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 300; justify-content: center; align-items: center; }
+        .login-box { background: white; padding: 30px; border-radius: 12px; width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .login-box input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .main-layout { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+            .version-list { display: flex; overflow-x: auto; padding: 10px; gap: 10px; }
+            .version-item { flex-shrink: 0; margin-bottom: 0; white-space: nowrap; }
+            .content-area { padding: 20px; }
+            .detail-card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部导航 -->
+    <header>
+        <div class="container nav-wrapper">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                软件发布更新日志
+            </div>
+            <button class="btn btn-primary" onclick="showLogin()">管理后台</button>
+        </div>
+    </header>
+
+    <!-- 主布局 -->
+    <div class="main-layout">
+        <!-- 左侧版本列表 -->
+        <aside class="sidebar" id="sidebar">
+            <!-- JS 动态生成 -->
+        </aside>
+
+        <!-- 右侧详情内容 -->
+        <main class="content-area">
+            <div class="detail-card" id="detailCard">
+                <!-- JS 动态生成 -->
+            </div>
+        </main>
+    </div>
+
+    <!-- 登录弹窗 -->
+    <div id="loginModal">
+        <div class="login-box">
+            <h3>管理员登录</h3>
+            <p style="color:#666; font-size:0.8rem; margin-bottom:10px;">(演示密码: admin)</p>
+            <input type="password" id="passwordInput" placeholder="请输入密码">
+            <button class="btn btn-primary" style="width:100%" onclick="handleLogin()">登录</button>
+            <button class="btn" style="width:100%; margin-top:10px; border:none;" onclick="closeLogin()">取消</button>
+        </div>
+    </div>
+
+    <!-- 管理后台 (默认隐藏) -->
+    <div id="adminPanel" class="admin-panel hidden">
+        <div class="admin-container">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <h2>发布新版本</h2>
+                <button class="btn" onclick="toggleMode()">返回查看</button>
+            </div>
+            
+            <!-- CSV 导入导出区域 -->
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                <div>
+                    <strong style="color: #334155; font-size: 0.9rem;">数据管理 (CSV)</strong>
+                    <p style="color: #64748b; font-size: 0.8rem; margin-top: 4px;">支持批量导入导出 CSV 格式数据。</p>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="importEncoding" class="form-select" style="width: auto;">
+                        <option value="UTF-8">UTF-8 编码</option>
+                        <option value="GBK">GBK 编码 (Excel默认)</option>
+                    </select>
+                    <button class="btn" onclick="exportToCSV()">📤 导出 CSV</button>
+                    <button class="btn" onclick="document.getElementById('importFile').click()">📥 导入 CSV</button>
+                    <input type="file" id="importFile" accept=".csv" style="display: none;" onchange="importFromCSV(this)">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">版本号</label>
+                <input type="text" class="form-input" id="inputVersion" placeholder="例如: v2.0.0">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <label class="form-label">发布日期</label>
+                    <input type="date" class="form-input" id="inputDate">
+                </div>
+                <div class="form-col">
+                    <label class="form-label">状态</label>
+                    <select class="form-select" id="inputStatus">
+                        <option value="released">正式发布</option>
+                        <option value="beta">测试版</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">更新内容</label>
+                <div class="changes-editor" id="changesEditor">
+                    <!-- 动态添加行 -->
+                </div>
+                <button class="btn-add" onclick="addChangeRow()">+ 添加更新项</button>
+            </div>
+
+            <div style="text-align:right; margin-top:20px;">
+                <button class="btn" onclick="resetForm()">重置</button>
+                <button class="btn btn-primary" onclick="submitRelease()">发布</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 数据层 ====================
+        let appData = {
+            categories: [
+                {
+                    id: 'bios',
+                    name: 'BIOS软件历史版本',
+                    data: [
+                        {
+                            version: "v2.1.0",
+                            date: "2026-03-01",
+                            status: "released",
+                            changes: [
+                                { type: "new", title: "全新的暗黑模式支持", detail: "现在可以在设置中一键切换暗黑模式，保护您的视力。" },
+                                { type: "opt", title: "性能优化提升 30%", detail: "重构了底层渲染引擎，大幅降低了内存占用。" },
+                                { type: "fix", title: "修复了高分辨率下的显示问题", detail: "针对 4K 屏幕和 200% DPI 进行了专项适配。" }
+                            ]
+                        },
+                        {
+                            version: "v2.0.5",
+                            date: "2026-02-15",
+                            status: "released",
+                            changes: [
+                                { type: "fix", title: "修复登录偶尔失败的问题", detail: "优化了 Token 刷新机制。" },
+                                { type: "opt", title: "调整了卡片宽度", detail: "根据用户反馈，将最大宽度调整为 960px。" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'tool1',
+                    name: 'BIOS工具1历史版本',
+                    data: [
+                        {
+                            version: "v1.1.0",
+                            date: "2026-02-28",
+                            status: "released",
+                            changes: [
+                                { type: "new", title: "新增批量刷新功能", detail: "支持同时刷新多个设备的BIOS。" },
+                                { type: "opt", title: "界面优化", detail: "改进了用户界面，操作更加直观。" }
+                            ]
+                        },
+                        {
+                            version: "v1.0.0",
+                            date: "2026-02-10",
+                            status: "released",
+                            changes: [
+                                { type: "new", title: "初始版本", detail: "BIOS工具1的初始发布版本。" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'tool2',
+                    name: 'BIOS工具2历史版本',
+                    data: [
+                        {
+                            version: "v1.0.5",
+                            date: "2026-02-25",
+                            status: "released",
+                            changes: [
+                                { type: "fix", title: "修复固件检测问题", detail: "解决了某些设备无法检测到最新固件的问题。" },
+                                { type: "opt", title: "性能优化", detail: "提高了固件更新的速度。" }
+                            ]
+                        },
+                        {
+                            version: "v1.0.0",
+                            date: "2026-02-01",
+                            status: "released",
+                            changes: [
+                                { type: "new", title: "初始版本", detail: "BIOS工具2的初始发布版本。" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        let currentCategoryId = 'bios'; // 当前显示的分类ID
+        let currentVersionIndex = 0; // 当前选中的版本索引
+
+        // ==================== 辅助函数 ====================
+        
+        function saveData() {
+            localStorage.setItem('releaseNotesData', JSON.stringify(appData));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('releaseNotesData');
+            if (saved) {
+                try {
+                    const loadedData = JSON.parse(saved);
+                    // 检查数据结构是否为最新格式
+                    if (loadedData.categories && Array.isArray(loadedData.categories)) {
+                        // 验证数据有效性
+                        if (validateData(loadedData)) {
+                            appData = loadedData;
+                        } else {
+                            console.error('数据验证失败，使用默认数据');
+                        }
+                    } else if (loadedData.bios && loadedData.tool1 && loadedData.tool2) {
+                        // 兼容旧格式（对象形式）
+                        const convertedData = {
+                            categories: [
+                                {
+                                    id: 'bios',
+                                    name: 'BIOS软件历史版本',
+                                    data: loadedData.bios
+                                },
+                                {
+                                    id: 'tool1',
+                                    name: 'BIOS工具1历史版本',
+                                    data: loadedData.tool1
+                                },
+                                {
+                                    id: 'tool2',
+                                    name: 'BIOS工具2历史版本',
+                                    data: loadedData.tool2
+                                }
+                            ]
+                        };
+                        if (validateData(convertedData)) {
+                            appData = convertedData;
+                        } else {
+                            console.error('数据验证失败，使用默认数据');
+                        }
+                    } else {
+                        // 兼容最旧格式（数组形式）
+                        const convertedData = {
+                            categories: [
+                                {
+                                    id: 'bios',
+                                    name: 'BIOS软件历史版本',
+                                    data: loadedData
+                                },
+                                {
+                                    id: 'tool1',
+                                    name: 'BIOS工具1历史版本',
+                                    data: [
+                                        {
+                                            version: "v1.1.0",
+                                            date: "2026-02-28",
+                                            status: "released",
+                                            changes: [
+                                                { type: "new", title: "新增批量刷新功能", detail: "支持同时刷新多个设备的BIOS。" },
+                                                { type: "opt", title: "界面优化", detail: "改进了用户界面，操作更加直观。" }
+                                            ]
+                                        },
+                                        {
+                                            version: "v1.0.0",
+                                            date: "2026-02-10",
+                                            status: "released",
+                                            changes: [
+                                                { type: "new", title: "初始版本", detail: "BIOS工具1的初始发布版本。" }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    id: 'tool2',
+                                    name: 'BIOS工具2历史版本',
+                                    data: [
+                                        {
+                                            version: "v1.0.5",
+                                            date: "2026-02-25",
+                                            status: "released",
+                                            changes: [
+                                                { type: "fix", title: "修复固件检测问题", detail: "解决了某些设备无法检测到最新固件的问题。" },
+                                                { type: "opt", title: "性能优化", detail: "提高了固件更新的速度。" }
+                                            ]
+                                        },
+                                        {
+                                            version: "v1.0.0",
+                                            date: "2026-02-01",
+                                            status: "released",
+                                            changes: [
+                                                { type: "new", title: "初始版本", detail: "BIOS工具2的初始发布版本。" }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        };
+                        if (validateData(convertedData)) {
+                            appData = convertedData;
+                        } else {
+                            console.error('数据验证失败，使用默认数据');
+                        }
+                    }
+                } catch(e) {
+                    console.error('数据加载失败', e);
+                }
+            }
+        }
+
+        // 安全解码函数，处理URI malformed错误
+        function safeDecode(str) {
+            try {
+                return decodeURIComponent(escape(str));
+            } catch (error) {
+                console.error('解码失败:', error);
+                // 如果解码失败，返回原始字符串
+                return str;
+            }
+        }
+
+        // 数据验证函数
+        function validateData(data) {
+            if (!data || typeof data !== 'object') {
+                return false;
+            }
+            
+            if (!data.categories || !Array.isArray(data.categories)) {
+                return false;
+            }
+            
+            for (const category of data.categories) {
+                if (!category.id || !category.name || !Array.isArray(category.data)) {
+                    return false;
+                }
+                
+                for (const item of category.data) {
+                    if (!item.version || !item.date || !item.status || !Array.isArray(item.changes)) {
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        // 防抖函数，用于优化性能
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function groupDataByVersion(data) {
+            // 简单返回数据本身，如果需要复杂分组可在此修改
+            return data; 
+        }
+
+        function toggleMode() {
+            const panel = document.getElementById('adminPanel');
+            if (panel.classList.contains('hidden')) {
+                // 进入管理模式
+                panel.classList.remove('hidden');
+                resetForm();
+            } else {
+                // 退出管理模式
+                panel.classList.add('hidden');
+            }
+        }
+
+        // ==================== 视图层 ====================
+        
+        // 使用防抖函数优化渲染性能
+        const debouncedRenderAll = debounce(function() {
+            renderSidebar();
+            renderDetail();
+        }, 100);
+
+        function renderAll() {
+            debouncedRenderAll();
+        }
+
+        function renderSidebar() {
+            const sidebarEl = document.getElementById('sidebar');
+            sidebarEl.innerHTML = '';
+            
+            appData.categories.forEach(category => {
+                // 创建分类标题
+                const headerEl = document.createElement('div');
+                headerEl.className = 'sidebar-header';
+                headerEl.textContent = category.name;
+                sidebarEl.appendChild(headerEl);
+                
+                // 创建版本列表
+                const listEl = document.createElement('ul');
+                listEl.className = 'version-list';
+                listEl.id = `versionList-${category.id}`;
+                
+                // 添加版本项
+                category.data.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = `version-item ${category.id === currentCategoryId && index === currentVersionIndex ? 'active' : ''}`;
+                    li.onclick = () => {
+                        currentCategoryId = category.id;
+                        currentVersionIndex = index;
+                        renderAll();
+                    };
+                    li.innerHTML = `
+                        <span>${item.version}</span>
+                        <span class="badge">${item.status === 'released' ? '正式' : '测试'}</span>
+                    `;
+                    listEl.appendChild(li);
+                });
+                
+                sidebarEl.appendChild(listEl);
+            });
+        }
+
+        function renderDetail() {
+            const cardEl = document.getElementById('detailCard');
+            
+            // 查找当前分类
+            const currentCategory = appData.categories.find(cat => cat.id === currentCategoryId);
+            if (!currentCategory) {
+                cardEl.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">暂无数据</div>';
+                return;
+            }
+            
+            const item = currentCategory.data[currentVersionIndex];
+            if (!item) {
+                cardEl.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">暂无数据</div>';
+                return;
+            }
+
+            const statusClass = item.status === 'released' ? 'status-stable' : 'status-beta';
+            const statusText = item.status === 'released' ? '正式版' : '测试版';
+
+            let changesHtml = item.changes.map((change, index) => {
+                const tagClass = change.type === 'new' ? 'tag-new' : (change.type === 'fix' ? 'tag-fix' : 'tag-opt');
+                const tagText = change.type === 'new' ? '新增' : (change.type === 'fix' ? '修复' : '优化');
+                const detailId = `detail-${currentCategoryId}-${currentVersionIndex}-${index}`;
+                
+                return `
+                <li class="change-item">
+                    <div class="change-header">
+                        <div class="change-main">
+                            <span class="change-tag ${tagClass}">${tagText}</span>
+                            <span class="change-title">${change.title}</span>
+                        </div>${change.detail ? `<button class="btn-detail" onclick="toggleDetail('${detailId}', this)">查看详情</button>` : ''}
+                    </div>
+                    ${change.detail ? `<div class="change-detail-box" id="${detailId}">${change.detail}</div>` : ''}
+                </li>
+                `;
+            }).join('');
+
+            // 使用片段中的 HTML 结构
+            cardEl.innerHTML = `
+                <div class="card-header">
+                    <span class="version-title">${item.version}</span>
+                    <span class="release-date">${item.date}</span>
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+                <ul class="change-list">
+                    ${changesHtml}
+                </ul>
+            `;
+        }
+
+        // ==================== 交互逻辑 (基于片段) ====================
+
+        // 折叠/展开逻辑
+        function toggleDetail(id, btn) {
+            const el = document.getElementById(id);
+            if (el.classList.contains('show')) {
+                el.classList.remove('show');
+                btn.textContent = '查看详情';
+            } else {
+                el.classList.add('show');
+                btn.textContent = '收起详情';
+            }
+        }
+
+        // --- 6. 表单逻辑 (支持标题和详情) ---
+        function addChangeRow(type = 'new', title = '', detail = '') {
+            const container = document.getElementById('changesEditor');
+            const div = document.createElement('div');
+            div.className = 'change-row';
+            div.innerHTML = `
+                <div class="row-top">
+                    <select class="form-select">
+                        <option value="new" ${type === 'new' ? 'selected' : ''}>新功能</option>
+                        <option value="fix"${type === 'fix' ? 'selected' : ''}>修复</option>
+                        <option value="opt" ${type === 'opt' ? 'selected' : ''}>优化</option>
+                    </select>
+                    <input type="text" class="form-input" placeholder="标题 (简短描述)" value="${title}">
+                    <button class="btn-icon" onclick="this.parentElement.parentElement.remove()" title="删除">×</button>
+                </div>
+                <textarea class="form-textarea" placeholder="详细内容 (选填,填写后会出现“查看详情”按钮)">${detail}</textarea>
+            `;
+            container.appendChild(div);
+        }
+
+        function resetForm() {
+            document.getElementById('inputVersion').value = '';
+            document.getElementById('inputDate').value = '';
+            document.getElementById('inputStatus').value = 'released';
+            document.getElementById('changesEditor').innerHTML = '';
+            addChangeRow();
+        }
+
+        function submitRelease() {
+            const version = document.getElementById('inputVersion').value;
+            const date = document.getElementById('inputDate').value;
+            const status = document.getElementById('inputStatus').value;
+            if (!version || !date) return alert('请填写版本号和日期');
+            const rows = document.querySelectorAll('.change-row');
+            const changes = [];
+            rows.forEach(row => {
+                const type = row.querySelector('select').value;
+                const title = row.querySelector('input').value.trim();
+                const detail = row.querySelector('textarea').value.trim();
+                if (title) {
+                    changes.push({ type, title, detail });
+                }
+            });
+            if (changes.length === 0) return alert('请至少添加一条更新内容');
+            const newItem = { version, date, status, changes };
+            
+            // 查找当前分类并添加新发布
+            const currentCategory = appData.categories.find(cat => cat.id === currentCategoryId);
+            if (currentCategory) {
+                currentCategory.data.unshift(newItem);
+                currentVersionIndex = 0;
+                saveData();
+                renderAll();
+                toggleMode();
+                alert('发布成功!');
+            } else {
+                alert('发布失败：未找到当前分类');
+            }
+        }
+
+        // --- 7. 导入导出 (CSV) ---
+        function exportToCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "类型,版本号,发布日期,状态,类型,标题,详细内容\n";
+            
+            // 导出所有分类的数据
+            appData.categories.forEach(category => {
+                category.data.forEach(ver => {
+                    const statusText = ver.status === 'released' ? '正式发布' : '测试版';
+                    const list = ver.changes || [];
+                    list.forEach(item => {
+                        let typeText = '优化';
+                        if (item.type === 'new') typeText = '新功能';
+                        if (item.type === 'fix') typeText = '修复';
+                        // 兼容旧数据导出
+                        const title = item.title || item.text || '';
+                        const detail = item.detail || '';
+                        const cleanTitle = `"${title.replace(/"/g, '""')}"`;
+                        const cleanDetail = `"${detail.replace(/"/g, '""')}"`;
+                        csvContent += `${category.name},${ver.version},${ver.date},${statusText},${typeText},${cleanTitle},${cleanDetail}\n`;
+                    });
+                });
+            });
+            
+            const link = document.createElement("a");
+            link.href = encodeURI(csvContent);
+            link.download = "release_data.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function importFromCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            // 验证文件类型
+            if (!file.name.endsWith('.csv')) {
+                alert('请上传CSV格式的文件');
+                input.value = '';
+                return;
+            }
+            
+            const encoding = document.getElementById('importEncoding').value;
+            const reader = new FileReader();
+            
+            // 显示加载状态
+            const loadingElement = document.createElement('div');
+            loadingElement.id = 'importLoading';
+            loadingElement.style.position = 'fixed';
+            loadingElement.style.top = '50%';
+            loadingElement.style.left = '50%';
+            loadingElement.style.transform = 'translate(-50%, -50%)';
+            loadingElement.style.padding = '20px';
+            loadingElement.style.backgroundColor = 'white';
+            loadingElement.style.border = '1px solid #ddd';
+            loadingElement.style.borderRadius = '4px';
+            loadingElement.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+            loadingElement.textContent = '正在导入数据...';
+            document.body.appendChild(loadingElement);
+            
+            reader.onload = function(e) {
+                try {
+                    let text = e.target.result;
+                    
+                    // 处理BOM字符
+                    if (text.charCodeAt(0) === 0xFEFF) {
+                        text = text.substring(1);
+                    }
+                    
+                    // 替换可能的换行符
+                    text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                    
+                    const rows = text.split('\n');
+                    const newCategories = [];
+                    const categoryMap = {};
+                    let successCount = 0;
+                    let errorCount = 0;
+                    
+                    for (let i = 1; i < rows.length; i++) {
+                        try {
+                            if (!rows[i].trim()) continue;
+                            
+                            // 尝试不同的分隔符处理
+                            let parts;
+                            try {
+                                parts = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                            } catch (error) {
+                                // 如果正则表达式失败，使用简单的逗号分隔
+                                parts = rows[i].split(',');
+                            }
+                            
+                            if (parts.length < 5) {
+                                errorCount++;
+                                continue;
+                            }
+                            
+                            // 处理每个字段，确保中文正确显示
+                            const categoryName = safeDecode(parts[0].trim());
+                            const ver = safeDecode(parts[1].trim());
+                            const date = safeDecode(parts[2].trim());
+                            const statusRaw = safeDecode(parts[3].trim());
+                            const typeRaw = safeDecode(parts[4].trim());
+                            
+                            // 处理标题和详情
+                            let title = '';
+                            let detail = '';
+                            if (parts.length >= 7) {
+                                title = safeDecode(parts[5].replace(/^"|"$/g, '').replace(/""/g, '"'));
+                                detail = safeDecode(parts[6].replace(/^"|"$/g, '').replace(/""/g, '"'));
+                            } else if (parts.length === 6) {
+                                title = safeDecode(parts[5].replace(/^"|"$/g, '').replace(/""/g, '"'));
+                            }
+                            
+                            // 清理特殊字符，解决乱码问题
+                            title = title.replace(/[\u0000-\u001F]/g, '');
+                            detail = detail.replace(/[\u0000-\u001F]/g, '');
+                            
+                            // 验证必填字段
+                            if (!categoryName || !ver || !date) {
+                                errorCount++;
+                                continue;
+                            }
+                            
+                            let status = 'released';
+                            if (statusRaw.includes('测试')) status = 'beta';
+                            let type = 'opt';
+                            if (typeRaw.includes('新功能')) type = 'new';
+                            if (typeRaw.includes('修复')) type = 'fix';
+                            
+                            // 生成分类ID
+                            const categoryId = categoryName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+                            
+                            // 查找或创建分类
+                            if (!categoryMap[categoryId]) {
+                                categoryMap[categoryId] = {
+                                    id: categoryId,
+                                    name: categoryName,
+                                    data: []
+                                };
+                                newCategories.push(categoryMap[categoryId]);
+                            }
+                            
+                            // 查找是否已存在相同版本和日期的记录
+                            let existingRecord = categoryMap[categoryId].data.find(item => item.version === ver && item.date === date);
+                            
+                            if (existingRecord) {
+                                existingRecord.changes.push({ type, title, detail });
+                            } else {
+                                const newRecord = { version: ver, date: date, status: status, changes: [{ type, title, detail }] };
+                                categoryMap[categoryId].data.push(newRecord);
+                            }
+                            
+                            successCount++;
+                        } catch (rowError) {
+                            console.error(`行 ${i+1} 解析失败:`, rowError);
+                            errorCount++;
+                        }
+                    }
+                    
+                    // 检查是否有数据
+                    const totalRecords = newCategories.reduce((total, category) => total + category.data.length, 0);
+                    if (totalRecords > 0) {
+                        if(confirm(`解析成功!共 ${successCount} 条记录，${errorCount} 条记录解析失败。确认覆盖吗?`)) {
+                            appData.categories = newCategories;
+                            // 确保当前分类仍然存在
+                            const currentCategoryExists = appData.categories.some(cat => cat.id === currentCategoryId);
+                            if (!currentCategoryExists && appData.categories.length > 0) {
+                                currentCategoryId = appData.categories[0].id;
+                                currentVersionIndex = 0;
+                            }
+                            saveData();
+                            renderAll();
+                            alert(`导入成功!共导入 ${successCount} 条记录，${errorCount} 条记录解析失败。`);
+                        }
+                    } else {
+                        alert(`未解析到有效数据，共 ${errorCount} 条记录解析失败。`);
+                    }
+                } catch (error) {
+                    console.error('导入失败:', error);
+                    alert('导入失败：' + error.message);
+                } finally {
+                    // 移除加载状态
+                    const loadingElement = document.getElementById('importLoading');
+                    if (loadingElement) {
+                        document.body.removeChild(loadingElement);
+                    }
+                    input.value = '';
+                }
+            };
+            
+            reader.onerror = function() {
+                console.error('文件读取失败');
+                alert('文件读取失败，请重试');
+                // 移除加载状态
+                const loadingElement = document.getElementById('importLoading');
+                if (loadingElement) {
+                    document.body.removeChild(loadingElement);
+                }
+                input.value = '';
+            };
+            
+            reader.readAsText(file, encoding);
+        }
+
+        // ==================== 登录逻辑 ====================
+        function showLogin() {
+            document.getElementById('loginModal').style.display = 'flex';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+
+        function closeLogin() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+
+        function handleLogin() {
+            const pwd = document.getElementById('passwordInput').value;
+            if (pwd === 'admin') {
+                closeLogin();
+                toggleMode();
+            } else {
+                alert('密码错误 (提示: admin)');
+            }
+        }
+
+        // ==================== 初始化 ====================
+        window.onload = function() {
+            loadData();
+            // 确保当前分类存在
+            const currentCategoryExists = appData.categories.some(cat => cat.id === currentCategoryId);
+            if (!currentCategoryExists && appData.categories.length > 0) {
+                currentCategoryId = appData.categories[0].id;
+                currentVersionIndex = 0;
+            }
+            renderAll();
+        };
+
+    </script>
+</body>
+</html>
